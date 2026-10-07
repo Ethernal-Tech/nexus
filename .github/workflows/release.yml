@@ -32,7 +32,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          IMAGE_NAME=ghcr.io/Ethernal-Tech/nexus:${{ github.ref_name }}
+          IMAGE_NAME=ghcr.io/ethernal-tech/nexus:${{ github.ref_name }}
           echo "Building Docker image $IMAGE_NAME"
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
@@ -56,7 +56,7 @@ jobs:
             - Automatic release created by GitHub Actions.
             - Built amd64/linux docker image
             
-            [ghcr.io/Ethernal-Tech/nexus](https://ghcr.io/Ethernal-Tech/nexus:${{ github.ref_name}})
+            [ghcr.io/Ethernal-Tech/nexus](https://ghcr.io/ethernal-tech/nexus:${{ github.ref_name}})
           draft: false
           prerelease: false
           files: ./nexus
