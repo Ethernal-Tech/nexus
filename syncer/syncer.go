@@ -93,6 +93,7 @@ func (s *syncer) initializePeerMap() {
 // startPeerStatusUpdateProcess subscribes peer status change event and updates peer map
 func (s *syncer) startPeerStatusUpdateProcess() {
 	for peerStatus := range s.syncPeerClient.GetPeerStatusUpdateCh() {
+		s.logger.Debug("received peer status update", "peer ID", peerStatus.ID, "number", peerStatus.Number)
 		s.putToPeerMap(peerStatus)
 	}
 }
@@ -165,6 +166,8 @@ func (s *syncer) Sync(callback func(*types.Block) bool) error {
 		// Wait for a new event to arrive
 		<-s.newStatusCh
 
+		s.logger.Debug("received new status event, start syncing", "local_latest", localLatest)
+
 		// fetch local latest block
 		if header := s.blockchain.Header(); header != nil {
 			localLatest = header.Number
@@ -172,24 +175,28 @@ func (s *syncer) Sync(callback func(*types.Block) bool) error {
 
 		// pick one best peer
 		bestPeer := s.peerMap.BestPeer(skipList)
-		if bestPeer == nil {
-			// Empty skipList map if there are no best peers
+		if bestPeer == nil || bestPeer.Number <= localLatest-2 {
+			// Empty skipList map if there are no best peers or if the best peer is behind multiple blocks
 			skipList = make(map[peer.ID]bool)
 
 			continue
 		}
+
+		s.logger.Debug("best peer selected for syncing", "peer ID", bestPeer.ID, "number", bestPeer.Number, "local_latest", localLatest)
 
 		// if the bestPeer does not have a new block continue
 		if bestPeer.Number <= localLatest {
 			continue
 		}
 
+		s.logger.Debug("starting bulk sync with peer", "peer ID", bestPeer.ID, "number", bestPeer.Number)
 		// fetch block from the peer
 		lastNumber, shouldTerminate, err := s.bulkSyncWithPeer(bestPeer.ID, callback)
 		if err != nil {
 			s.logger.Warn("failed to complete bulk sync with peer, try to next one", "peer ID", "error", bestPeer.ID, err)
 		}
 
+		s.logger.Debug("bulk sync completed", "peer ID", bestPeer.ID, "last_number", lastNumber, "best_number", bestPeer.Number)
 		if lastNumber < bestPeer.Number {
 			skipList[bestPeer.ID] = true
 
