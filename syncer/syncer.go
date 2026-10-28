@@ -175,7 +175,7 @@ func (s *syncer) Sync(callback func(*types.Block) bool) error {
 
 		// pick one best peer
 		bestPeer := s.peerMap.BestPeer(skipList)
-		if bestPeer == nil || bestPeer.Number <= localLatest-2 {
+		if bestPeer == nil || (localLatest >= 2 && bestPeer.Number <= localLatest-2) {
 			// Empty skipList map if there are no best peers or if the best peer is behind multiple blocks
 			skipList = make(map[peer.ID]bool)
 
